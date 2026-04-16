@@ -1,61 +1,46 @@
-import time
 import threading
+import json
+from engine import Reactor
+from player import Player
 
+def load_data():
+    with open("data.json", 'r') as file:
+        return json.load(file)
 
-class Reactor:
-    """Simulates the physical state of the nuclear core."""
-    def __init__(self, level=1):
-        self.temp = 573.15      #Kelvin
-        self.pressure = 15.5   #MPa
-        self.meltdown_point = 2500.0
-        self.level = level
-        self.is_active = True # The kill switch for the thread
+if __name__ == "__main__":
+    # 1. Create the objects
+    world_map = load_data()
+    my_reactor = Reactor(level=1)
+    my_player = Player()
 
-    def core_loop(self):
-        """Background thread that increases heat over time."""
-        while self.is_active:
-            self.temp += (0.5 * self.level)  # Constant heat rise
-            self.pressure = self.temp * 0.027  # Simple PV=nRT relationship
+    # 2. Start the Physics Thread (The reactor starts heating up!)
+    # daemon=True means the thread closes automatically when you quit the game
+    physics_thread = threading.Thread(target=my_reactor.core_loop, daemon=True)
+    physics_thread.start()
 
-            if self.temp > self.meltdown_point:
-                print("\n[CRITICAL] MELTDOWN OCCURRED! CONTAINMENT BREACH!")
-                self.is_active = False
+    print("--- NUCLEAR CORE SIMULATOR STARTING ---")
+    #print("Commands: North, South, East, West, Status, Quit")
 
-            time.sleep(2)
+    # 3. The Main Game Loop
+    while my_reactor.is_active:
+        print(f"\nLocation: {my_player.current_room}")
+        action = input("Command (North/South/East/West, Pickup, Status, Look, Stop): ").strip().capitalize()
 
+        if action == "Look":
+            # Shows the room description again
+            print(f"\n{world_map[my_player.current_room]['description']}")
+            if world_map[my_player.current_room]['item']:
+                print(f"You see a {world_map[my_player.current_room]['item']} here.")
 
-class player:
+        elif action == "Stop":
+            # The WIN CONDITION
+            if "Boron Rod" in my_player.inventory:
+                print("\n[SUCCESS] You inserted the Boron Rod and stabilized the core!")
+                my_reactor.emergency_shutdown()
+                print("YOU SAVED THE FACILITY.")
+            else:
+                print("\n[FAILURE] You shut down the console, but the core is still critical!")
+                my_reactor.is_active = False  # Reactor melts down anyway
+            break
 
-        def __init__(self):
-            self.location = (0, 0) # X, Y coordinates
-            self.inventory = []
-            self.radiation_dose = 0.0 # in mSv
-            self.current_room = "Control Room"
-
-            def move(self, direction, world_map):
-                if direction in world_map[self.current_room]:
-                    self.current_room = world_map[self.current_room][direction]
-
-                    # Map Logic: Update Coordinates
-                    if direction == 'North':
-                        self.location[1] += 1
-                    elif direction == 'South':
-                        self.location[1] -= 1
-                    elif direction == 'East':
-                        self.location[0] += 1
-                    elif direction == 'West':
-                        self.location[0] -= 1
-
-                    # Applied Radiation Logic
-                    room_rad = world_map[self.current_room]['rad']
-                    self.radiation_dose += room_rad
-
-                    print(f"Moved to {self.current_room}. Total Dose: {self.radiation_dose:.2f} mSv")
-                else:
-                    print("Path blocked! Choose another direction.")
-
-        world_map = {
-            'Control Room': {'North': 'Turbine Hall', 'rad': 0.05, 'item': None},
-            'Turbine Hall': {'South': 'Control Room', 'East': 'Reactor Core', 'rad': 1.5, 'item': 'Lead Shield'},
-            'Reactor Core': {'West': 'Turbine Hall', 'rad': 10.0, 'item': 'Boron Rod'}
-        }
+    print("\nGame Over. Final Radiation Dose:", my_player.radiation_dose)

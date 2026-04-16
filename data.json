@@ -1,0 +1,39 @@
+{
+  "Control Room": {
+    "description": "The hub of the plant. Monitors flicker with amber warnings.",
+    "North": "Turbine Hall",
+    "rad": 0.05,
+    "item": null,
+    "required_item": null
+  },
+  "Turbine Hall": {
+    "description": "A massive cavernous room filled with the roar of steam turbines.",
+    "South": "Control Room",
+    "East": "Reactor Core",
+    "rad": 1.5,
+    "item": "Lead Shield",
+    "required_item": null
+  },
+  "Maintenance Closet": {
+    "description": "A cramped room smelling of oil and ozone.",
+    "East": "Turbine Hall",
+    "rad": 0.1,
+    "item": "Duct Tape",
+    "required_item": null
+  },
+  "Reactor Core": {
+    "description": "The air glows blue with Cherenkov radiation. Heat is intense.",
+    "West": "Turbine Hall",
+    "North": "Cooling Pump Station",
+    "rad": 10.0,
+    "item": "Boron Rod",
+    "required_item": "Lead Shield"
+  },
+  "Cooling Pump Station": {
+    "description": "High-pressure pipes vibrate underfoot. A leak is spraying steam.",
+    "South": "Reactor Core",
+    "rad": 4.0,
+    "item": "Wrench",
+    "required_item": "Duct Tape"
+  }
+}
