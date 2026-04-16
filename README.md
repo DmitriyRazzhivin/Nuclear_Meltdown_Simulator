@@ -26,17 +26,18 @@ The project follows a modular, decoupled architecture to ensure scalability and 
 ├── player.py        # Player state and movement logic
 ├── data.json        # World map and room metadata
 └── .gitignore       # Project exclusion rules
+```
 
 ## 🚀 Technical Implementation Highlights
 
-## Concurrency & Real-Time Simulation
+* **Concurrency & Real-Time Simulation**
 
 The reactor core operates on a daemon thread, independent of user input. This ensures that the environmental threat escalates even while the user is stationary, forcing a "time-pressure" decision-making environment.
 
-Data-Driven World Building
+* **Data-Driven World Building**
 
 By utilizing JSON for world-building, the logic is separated from the data. This allows for complex map expansions and balancing tweaks without modifying the underlying Python source code.
 
-Inverse Square Logic (Work-in-Progress)
+* **Inverse Square Logic (Work-in-Progress)**
 
 The simulation is being updated to calculate radiation exposure based on the player’s Euclidean distance from the core coordinates, rather than static room values.
