@@ -1,46 +1,52 @@
 import threading
-import json
+import time
 from engine import Reactor
 from player import Player
-
-def load_data():
-    with open("data.json", 'r') as file:
-        return json.load(file)
+from world import World
+from ui import SCADAInterface
 
 if __name__ == "__main__":
-    # 1. Create the objects
-    world_map = load_data()
-    my_reactor = Reactor(level=1)
-    my_player = Player()
+    # Initialize OOP architecture
+    world = World("data.json")
+    reactor = Reactor(level=1)
+    player = Player()
+    gui = SCADAInterface()
 
-    # 2. Start the Physics Thread (The reactor starts heating up!)
-    # daemon=True means the thread closes automatically when you quit the game
-    physics_thread = threading.Thread(target=my_reactor.core_loop, daemon=True)
+    # Start multi-threaded core thermal model
+    physics_thread = threading.Thread(target=reactor.core_loop, daemon=True)
     physics_thread.start()
 
-    print("--- NUCLEAR CORE SIMULATOR STARTING ---")
-    #print("Commands: North, South, East, West, Status, Quit")
+    # Initial screen draw
+    gui.render(player, reactor, world)
 
-    # 3. The Main Game Loop
-    while my_reactor.is_active:
-        print(f"\nLocation: {my_player.current_room}")
-        action = input("Command (North/South/East/West, Pickup, Status, Look, Stop): ").strip().capitalize()
+    while reactor.is_active:
+        action = input("\nSCADA-Command (North/South/East/West, Pickup, Look, Stop): ").strip().title()
 
-        if action == "Look":
-            # Shows the room description again
-            print(f"\n{world_map[my_player.current_room]['description']}")
-            if world_map[my_player.current_room]['item']:
-                print(f"You see a {world_map[my_player.current_room]['item']} here.")
-
+        if action in ["North", "South", "East", "West"]:
+            player.move(action, world)
+        elif action == "Pickup":
+            player.pickup_item(world)
+        elif action == "Look":
+            pass  # The GUI render naturally updates descriptions
         elif action == "Stop":
-            # The WIN CONDITION
-            if "Boron Rod" in my_player.inventory:
-                print("\n[SUCCESS] You inserted the Boron Rod and stabilized the core!")
-                my_reactor.emergency_shutdown()
-                print("YOU SAVED THE FACILITY.")
+            if "Boron Rod" in player.inventory:
+                print("\n" + "=" * 50)
+                print("[SUCCESS] Manual SCRAM Successful! Core stabilized!")
+                print("=" * 50)
+                reactor.emergency_shutdown()
             else:
-                print("\n[FAILURE] You shut down the console, but the core is still critical!")
-                my_reactor.is_active = False  # Reactor melts down anyway
+                print("\n" + "=" * 50)
+                print("[FATAL] Emergency SCRAM aborted! Insufficient coolant medium (Boron Rod).")
+                print("=" * 50)
+                reactor.is_active = False
             break
 
-    print("\nGame Over. Final Radiation Dose:", my_player.radiation_dose)
+        # Guard clause: If thread killed reactor while waiting for input
+        if not reactor.is_active:
+            break
+
+        # Redraw terminal screen
+        time.sleep(0.1)  # Small sleep buffer to allow user feedback messages to be read
+        gui.render(player, reactor, world)
+
+    print(f"\nSimulation Terminated. Final Operator Dosimetry: {player.radiation_dose:.3f} mSv")
